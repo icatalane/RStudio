@@ -8,11 +8,11 @@ rm(list = ls())
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 getwd()
 
-# # LibrerÃ­as y paquetes
+# # LibrerÃƒÂ­as y paquetes
 # install.packages("kableExtra")
 # install.packages("textdata")
 
-# # Vamos a cargar las librerÃ­as necesarias
+# # Vamos a cargar las librerÃƒÂ­as necesarias
 library(rwhatsapp)   
 library(rwhatsapp)
 library(lubridate)
@@ -20,7 +20,7 @@ library(tidyverse)
 library(tidytext)
 library(kableExtra)
 library(RColorBrewer)
-library(knitr)# LEEMOS EL CHAT A TRAVÉS DEL TXT EXPORTADO DESDE LA APP
+library(knitr)# LEEMOS EL CHAT A TRAVÃ‰S DEL TXT EXPORTADO DESDE LA APP
 library(ggimage)# EMOJI RANKING
 library(tidytext)
 library(stopwords)
@@ -28,12 +28,12 @@ library(rvest)
 library(textdata)
 
 
-miChat <- rwa_read("Data/chat.txt") # PREPARACIÓN DE DATOS PARA ANÁLISIS POR DATE/TIME
+miChat <- rwa_read("Data/chat.txt") # PREPARACIÃ“N DE DATOS PARA ANÃLISIS POR DATE/TIME
 Chat_completo <- miChat ## Copia para filtros
 
 miChat <-Chat_completo
 
-# SEGMENTACIÓN POR MES
+# SEGMENTACIÃ“N POR MES
 miChat <- miChat %>%  
   mutate(day = date(time)) %>%                   # crea la columna dIa
   filter(day >= "2015-04-15" & day <= "2020-10-05")
@@ -41,27 +41,27 @@ miChat <- miChat %>%
 miChat$day<-as.Date(as.character(miChat$day))
 miChat$estacion<- ifelse(miChat$day > dmy(21032015) & miChat$day < dmy(21062015),"Primavera 2015",
                     ifelse(miChat$day > dmy(22062015) & miChat$day < dmy(22092015),"Verano 2015",
-                    ifelse(miChat$day > dmy(23092015) & miChat$day < dmy(20122015),"Otoño 2015",
+                    ifelse(miChat$day > dmy(23092015) & miChat$day < dmy(20122015),"OtoÃ±o 2015",
                     ifelse(miChat$day > dmy(20122015) & miChat$day < dmy(20032016),"Invierno 2015",
                     ifelse(miChat$day > dmy(22062016) & miChat$day < dmy(23092016),"Primavera 2016",
                     ifelse(miChat$day > dmy(22062016) & miChat$day < dmy(22092016),"Verano 2016",
-                    ifelse(miChat$day > dmy(23092016) & miChat$day < dmy(20122016),"Otoño 2016",
+                    ifelse(miChat$day > dmy(23092016) & miChat$day < dmy(20122016),"OtoÃ±o 2016",
                     ifelse(miChat$day > dmy(20122016) & miChat$day < dmy(20032017),"Invierno 2016",
                     ifelse(miChat$day > dmy(22062017) & miChat$day < dmy(23092017),"Primavera 2017",
                     ifelse(miChat$day > dmy(22062017) & miChat$day < dmy(22092017),"Verano 2017",
-                    ifelse(miChat$day > dmy(23092017) & miChat$day < dmy(20122017),"Otoño 2017",
+                    ifelse(miChat$day > dmy(23092017) & miChat$day < dmy(20122017),"OtoÃ±o 2017",
                     ifelse(miChat$day > dmy(20122017) & miChat$day < dmy(20032018),"Invierno 2017",
                     ifelse(miChat$day > dmy(22062018) & miChat$day < dmy(23092018),"Primavera 2018",
                     ifelse(miChat$day > dmy(22062018) & miChat$day < dmy(22092018),"Verano 2018",
-                    ifelse(miChat$day > dmy(23092018) & miChat$day < dmy(20122018),"Otoño 2018",
+                    ifelse(miChat$day > dmy(23092018) & miChat$day < dmy(20122018),"OtoÃ±o 2018",
                     ifelse(miChat$day > dmy(20122018) & miChat$day < dmy(20032019),"Invierno 2018",
                     ifelse(miChat$day > dmy(22062019) & miChat$day < dmy(23092019),"Primavera 2019",
                     ifelse(miChat$day > dmy(22062019) & miChat$day < dmy(22092019),"Verano 2019",
-                    ifelse(miChat$day > dmy(23092019) & miChat$day < dmy(20122019),"Otoño 2019",
+                    ifelse(miChat$day > dmy(23092019) & miChat$day < dmy(20122019),"OtoÃ±o 2019",
                     ifelse(miChat$day > dmy(20122019) & miChat$day < dmy(20032020),"Invierno 2019",
                     ifelse(miChat$day > dmy(22062020) & miChat$day < dmy(23092020),"Primavera 2020",
                     ifelse(miChat$day > dmy(22062020) & miChat$day < dmy(22092020),"Verano 2020",
-                    ifelse(miChat$day > dmy(23092020) & miChat$day < dmy(20122020),"Otoño 2020",
+                    ifelse(miChat$day > dmy(23092020) & miChat$day < dmy(20122020),"OtoÃ±o 2020",
                     ifelse(miChat$day > dmy(20122020) & miChat$day < dmy(20032021), "Invierno 2020","0"
                 ))))))))))))))))))))))))
   
@@ -77,7 +77,7 @@ miChat$estacion<- ifelse(miChat$day > dmy(21032015) & miChat$day < dmy(21062015)
   
 
 
-# COLOR PALETTE - no necesario. Añadir "scale_fill_manual(values=paleta.estaciones) +" antes de ylab para añadir 9 colores
+# COLOR PALETTE - no necesario. AÃ±adir "scale_fill_manual(values=paleta.estaciones) +" antes de ylab para aÃ±adir 9 colores
 # paleta.estaciones <- brewer.pal(9,"Set1")[c(7,5,1,3,4,2,6,8)]
 
 # VERIFYING HOW MANY MESSAGES WERE SENT DURING THE PERIOD OF TIME
@@ -87,12 +87,12 @@ miChat %>%
   ggplot(aes(x = day, y = n, fill=estacion)) +
   geom_bar(stat = "identity") +
   
-  ylab("Número de mensajes") + xlab("Fecha") +
-  ggtitle("Mensajes por día", "Frecuencia por estación del año") +
+  ylab("NÃºmero de mensajes") + xlab("Fecha") +
+  ggtitle("Mensajes por dÃ­a", "Frecuencia por estaciÃ³n del aÃ±o") +
   theme_minimal() +
   theme( legend.title = element_blank(), 
          legend.position = "bottom")
-ggsave("Mensajes_por_día_estacion.png")
+ggsave("Mensajes_por_dÃ­a_estacion.png")
 
 # Vision en un calendario
 # install.packages("openair")
@@ -100,7 +100,7 @@ ggsave("Mensajes_por_día_estacion.png")
 # calendarPlot(miChat, pollutant = n, year = 2020, annotate = "date", cols= "heat")
 
 
-# Comparación según las estaciones del año
+# ComparaciÃ³n segÃºn las estaciones del aÃ±o
 # solo sale verano 2015 porque no coge el ifelse no coge bien las fechas 
 miChat %>% 
   group_by(day) %>% 
@@ -108,8 +108,8 @@ miChat %>%
   ggplot(aes(x = estacion, y = n, fill=day)) +
   geom_bar(stat = "identity") +
   
-  ylab("Número de mensajes") + xlab("Estación") +
-  ggtitle("Mensajes por estación", "Frecuencia por estación del año") +
+  ylab("NÃºmero de mensajes") + xlab("EstaciÃ³n") +
+  ggtitle("Mensajes por estaciÃ³n", "Frecuencia por estaciÃ³n del aÃ±o") +
   theme_minimal() +
   theme(legend.title = element_blank(), 
          legend.position = "right")+
@@ -129,15 +129,15 @@ miChat %>%
   
   ylab("") + xlab("") +
   coord_flip() +
-  ggtitle("Número de mensajes por día de la semana", "Frecuencia por estación del año") +
+  ggtitle("NÃºmero de mensajes por dÃ­a de la semana", "Frecuencia por estaciÃ³n del aÃ±o") +
   theme_minimal() +
   theme( legend.title = element_blank(), 
          legend.position = "bottom")
-ggsave("Mensajes_por_día_semana.png")
+ggsave("Mensajes_por_dÃ­a_semana.png")
 
 # KEEP THE WEEKEND OF THE WEEK AND RENAME THEM
-diasemana <- c("domingo","lunes","martes","miércoles","jueves","viernes","sábado","domingo")
-names(diasemana) <- 1:7# MENSAJES POR HORA DEL DÍA
+diasemana <- c("domingo","lunes","martes","miÃ©rcoles","jueves","viernes","sÃ¡bado","domingo")
+names(diasemana) <- 1:7# MENSAJES POR HORA DEL DÃA
 miChat %>% 
   mutate( hour = hour(time), 
           wday.num = wday(day),
@@ -146,14 +146,14 @@ miChat %>%
   ggplot(aes(x = hour, y = n, fill=estacion)) +
   geom_bar(stat = "identity") +
  
-  ylab("Número de mensajes") + xlab("Horario") +
-  ggtitle("Número de mensajes por hora del día", "Frecuencia según estación del año") +
+  ylab("NÃºmero de mensajes") + xlab("Horario") +
+  ggtitle("NÃºmero de mensajes por hora del dÃ­a", "Frecuencia segÃºn estaciÃ³n del aÃ±o") +
   facet_wrap(~wday.num, ncol=7, labeller = labeller(wday.num=diasemana))+
   theme_minimal() +
   theme( legend.title = element_blank(), 
          legend.position = "bottom",
          panel.spacing.x=unit(0.0, "lines"))
-ggsave("Mensajes_por_día_semana2.png")
+ggsave("Mensajes_por_dÃ­a_semana2.png")
 
 # CHANGE THE NAME OF USERS FOR CONFIDENTIALITY
 # levels(miChat$author)[1] <- "Carmen"
@@ -169,9 +169,9 @@ miChat %>%
   ggplot(aes(x = reorder(author, n), y = n, fill=estacion)) +
   geom_bar(stat = "identity") +
 
-  ylab("Número total de mensajes") + xlab("Usuario") +
+  ylab("NÃºmero total de mensajes") + xlab("Usuario") +
   coord_flip() +
-  ggtitle("Número total de mensajes por usuario.", "¿Quién es más comunicativo? Frecuencia por estación del año") +
+  ggtitle("NÃºmero total de mensajes por usuario.", "Â¿QuiÃ©n es mÃ¡s comunicativo? Frecuencia por estaciÃ³n del aÃ±o") +
   theme_minimal() +
   theme( legend.title = element_blank(), 
          legend.position = "bottom")
@@ -200,9 +200,9 @@ plotEmojis %>%
   geom_image(aes(image=emoji_url), size=.045) +
   scale_fill_gradient(low="#2b83ba",high="#d7191c") +
                       scale_color_gradient(low="#2b83ba",high="#d7191c") +
-                                           ylab("Número de veces que el emoji fue usado") +
+                                           ylab("NÃºmero de veces que el emoji fue usado") +
                                              xlab("Emoji y significado") +
-                                             ggtitle("Emojis más utilizados de manera general", "Emojis más usados por todos") +
+                                             ggtitle("Emojis mÃ¡s utilizados de manera general", "Emojis mÃ¡s usados por todos") +
                                              coord_flip() +
                                              theme_minimal() +
                                              theme()
@@ -233,17 +233,17 @@ geom_col(aes(fill = author, group=author), show.legend = FALSE, width = .20) +
 # USE TO FETCH AN EMOJI PNG IMAGE https://abs.twimg.com
   
 geom_image(aes(image=emoji_url), size=.13) +
-  ylab("Número de veces que se usó el emoji") +
+  ylab("NÃºmero de veces que se usÃ³ el emoji") +
   xlab("Emoji") +
   facet_wrap(~author, ncol = 5, scales = "free") +
-  ggtitle("Emojis más usados en la conversación, por usuario") +
+  ggtitle("Emojis mÃ¡s usados en la conversaciÃ³n, por usuario") +
   theme_minimal() +
   theme(axis.text.x = element_blank())
 ggsave("Emojis_por_autor.png")
 
 # REMOVE WORDS WITHOUT RELEVANT MEANING, SUCH AS PRONOUNS, ETC.
 remover_palabras <- c(stopwords(language = "es"), "https" , "s", "status", "twitter.com"
-                      "multimedia", "y", "la", "el","en", "es", "si", "lo", "ya", "pero", "esa", "los","yo","mi", "un", "con", "las", "omitido", "más","eso", "al", "una", "del", "qué", "todo", "así", "le", "su", "va", "porque", "todos", "hay", "les", "pue", "ese", "son", "está", "pues", "ahí", "sí","ver", "estás", "algo", "vas", "ir","voy", "creo","fue","solo", "ni","sólo","nada", "aqui", "q", "tú")
+                      "multimedia", "y", "la", "el","en", "es", "si", "lo", "ya", "pero", "esa", "los","yo","mi", "un", "con", "las", "omitido", "mÃ¡s","eso", "al", "una", "del", "quÃ©", "todo", "asÃ­", "le", "su", "va", "porque", "todos", "hay", "les", "pue", "ese", "son", "estÃ¡", "pues", "ahÃ­", "sÃ­","ver", "estÃ¡s", "algo", "vas", "ir","voy", "creo","fue","solo", "ni","sÃ³lo","nada", "aqui", "q", "tÃº")
 
 # WORD COUNT
 miChat %>%
@@ -259,9 +259,9 @@ miChat %>%
   geom_point(show.legend = FALSE, size = 3) +
   scale_fill_gradient(low="#2b83ba",high="#d7191c") +
                       scale_color_gradient(low="#2b83ba",high="#d7191c") +
-                                           ggtitle("Palabras más usadas en la conversación de manera general") +
+                                           ggtitle("Palabras mÃ¡s usadas en la conversaciÃ³n de manera general") +
                                              xlab("Palabras") +
-                                             ylab("Número de veces que se usó la palabra") +
+                                             ylab("NÃºmero de veces que se usÃ³ la palabra") +
                                              coord_flip() +
                                              theme_minimal()
 ggsave("Palabras.png")
@@ -285,10 +285,10 @@ group_by(author) %>%
     geom_col(show.legend = FALSE, width = .1) +
     geom_point(show.legend = FALSE, size = 3) +
     xlab("Palabras") +
-    ylab("Número de veces que se usó la palabra") +
+    ylab("NÃºmero de veces que se usÃ³ la palabra") +
     coord_flip() +
     facet_wrap(~author, ncol = 3, scales = "free") +
-    ggtitle("Palabras más usadas por usuario en la conversación") +
+    ggtitle("Palabras mÃ¡s usadas por usuario en la conversaciÃ³n") +
                                              theme_minimal()
 ggsave("Palabras_por_user.png")
 
@@ -306,9 +306,9 @@ miChat %>%
   geom_col(show.legend = FALSE) +
   scale_y_continuous(expand = (mult = c(0, 0, 0, 500))) +
   geom_text(aes(label = scales::comma(lex_diversity)), hjust = -0.1) +
-  ylab("Diversidad léxica") +
+  ylab("Diversidad lÃ©xica") +
   xlab("Usuario") +
-  ggtitle("Diversidad de léxico en la conversación") +
+  ggtitle("Diversidad de lÃ©xico en la conversaciÃ³n") +
   coord_flip()
 ggsave("diversidad_por_user.png")
 
@@ -329,9 +329,9 @@ ggsave("diversidad_por_user.png")
 #   top_n(n = 15, n) %>%
 #   ggplot(aes(x = reorder(word, n), y = n)) +
 #   geom_col(show.legend = FALSE) +
-#   ylab("Número de veces que se usó la palabra") + xlab("Palabras") +
+#   ylab("NÃºmero de veces que se usÃ³ la palabra") + xlab("Palabras") +
 #   coord_flip() +
-#   ggtitle("Top de palabras únicas usadas por Carmen")
+#   ggtitle("Top de palabras Ãºnicas usadas por Carmen")
 # 
 # 
 # palabras_unicas_ella <- miChat %>%
@@ -348,28 +348,28 @@ ggsave("diversidad_por_user.png")
 #   top_n(n = 15, n) %>%
 #   ggplot(aes(x = reorder(word, n), y = n)) +
 #   geom_col(show.legend = FALSE) +
-#   ylab("Número de veces que se usó la palabra") + xlab("Palabras") +
+#   ylab("NÃºmero de veces que se usÃ³ la palabra") + xlab("Palabras") +
 #   coord_flip() +
-#   ggtitle("Top de palabras únicas usadas por Ella")
+#   ggtitle("Top de palabras Ãºnicas usadas por Ella")
 # 
 # # UNIQUE WORDS FROM HIM
 # palabras_unicas_el <- miChat %>%
 #   unnest_tokens(input = text,
 #                 output = word) %>%
-#   filter(author != "Él") %>%  
+#   filter(author != "Ã‰l") %>%  
 #   count(word, sort = TRUE)miChat %>%
 #   unnest_tokens(input = text,
 #                 output = word) %>%
-#   filter(author == "Él") %>% 
+#   filter(author == "Ã‰l") %>% 
 #   count(word, sort = TRUE) %>% 
 #   filter(!word %in% palabras_unicas_el$word) %>% 
 #   # SELECT ONLY WORDS THAT NO ONE ELSE USES
 #   top_n(n = 15, n) %>%
 #   ggplot(aes(x = reorder(word, n), y = n)) +
 #   geom_col(show.legend = FALSE) +
-#   ylab("Número de veces que se usó la palabra") + xlab("Palabras") +
+#   ylab("NÃºmero de veces que se usÃ³ la palabra") + xlab("Palabras") +
 #   coord_flip() +
-#   ggtitle("Top de palabras únicas usadas por Él")
+#   ggtitle("Top de palabras Ãºnicas usadas por Ã‰l")
 
 # ANALISIS DE SENTIMIENTOS
 # WE USE THE RVEST PACKAGE
@@ -424,7 +424,7 @@ emoji_sentimiento_usuarios %>%
   geom_bar(position="stack", stat="identity", show.legend = F, width = .5) +
   scale_fill_manual(values = brewer.pal(4,"RdYlGn")[c(1,2,4,2)]) +
   ylab(" - Negativo / Neutral / Positivo +") + xlab("Usuario") +
-  ggtitle("Análisis de sentimientos por usuario","Basado en el puntaje promedio de sentimientos por emojis") +
+  ggtitle("AnÃ¡lisis de sentimientos por usuario","Basado en el puntaje promedio de sentimientos por emojis") +
   coord_flip() +
   theme_minimal()
 ggsave("sentimientos.png")
@@ -502,7 +502,7 @@ usuario_summary %>%
   scale_fill_manual(values = mis_colores) +
   xlab("Usuario") + ylab("Escala de netagivo a positivo") +
   coord_flip() +
-  ggtitle("Análisis de sentimientos por uso de emojis", "Uso de package Lexicon") +
+  ggtitle("AnÃ¡lisis de sentimientos por uso de emojis", "Uso de package Lexicon") +
   theme_minimal()
 
 ggsave("sentimientos_emojis.png")
@@ -515,7 +515,7 @@ emoji_emocion <- miChat %>%
   mutate( emoji = str_sub(emoji, end = 1)) %>%  
   mutate( emoji_name = str_remove(emoji_name, ":.*")) %>%  
   unnest_tokens(input=emoji_name, output=emoji_words) %>% 
-  inner_join(lexico_sentimientos, by=c("emoji_words"="word")) %>%# REMOVER CLASIFICACIÓN NEGATIVA/POSITIVA 
+  inner_join(lexico_sentimientos, by=c("emoji_words"="word")) %>%# REMOVER CLASIFICACIÃ“N NEGATIVA/POSITIVA 
   filter(!sentiment %in% c("negative","positive")) %>% 
   
   # KEEP ONLY THE 4 MOST FREQUENT EMOJI FOR EACH FEELING
@@ -547,10 +547,10 @@ sentimiento_chat %>%
   geom_col(aes(fill=n), show.legend = FALSE, width = .1) +
   geom_point(aes(color=n), show.legend = FALSE, size = 3) +
   coord_flip() +
-  ylab("Número de veces expresado") + xlab("Emoción") +
+  ylab("NÃºmero de veces expresado") + xlab("EmociÃ³n") +
   scale_fill_gradient(low="#2b83ba",high="#d7191c") +
   scale_color_gradient(low="#2b83ba",high="#d7191c") +
-  ggtitle("Emoción expresada con mayor frecuencia","Expresado por uso de emojis") +
+  ggtitle("EmociÃ³n expresada con mayor frecuencia","Expresado por uso de emojis") +
   theme_minimal()
 ggsave("emociones_frecuencia.png")
 
@@ -568,8 +568,8 @@ sentimiento_chat %>%
   ggplot(aes(x = reorder(sentiment, n), y = n, fill = sentimiento)) +
   geom_col() +
   scale_fill_manual(values = c("#d7191c","#fdae61", "#1a9641")) +
-  ylab("Número de veces expresado") +
-  xlab("Emoción") +
+  ylab("NÃºmero de veces expresado") +
+  xlab("EmociÃ³n") +
   coord_flip() +
   facet_wrap(~author, ncol = 3, scales = "free_x") +
   ggtitle("Emociones mayormente expresadas por usuario", "Expresado por uso de emojis") + 
