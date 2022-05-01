@@ -1,5 +1,5 @@
 # title: "Ver Trends"
-# author: Iulen Ibáñez Baños (iulen.ibanez@datacy.es)
+# author: Iulen IbÃ¡Ã±ez BaÃ±os (iulen.ibanez@datacy.es)
 #                             
 # last modified: oct 2020
 # output: -
@@ -51,16 +51,16 @@ library(graphTweets)
 library(dplyr)
 
 # 1. Autorizacion de la app----
-# El nombre que le asgnamos a la app en el formulario de autorizaci�n
+# El nombre que le asgnamos a la app en el formulario de autorización
 appname <- "RTWEET"
 
-consumer_key <- "0PTl4oqZnOnFU4EaKnq8EJeEN"
+consumer_key <- XXXXXXXXXX
 ## consumer secret (en el ejemplo no es un clave real, usar la verdadera)
-consumer_secret <- "qWePw8fNBBRxcRpRTjZRbzrxxNRvHNN6O4WgLhQS61hC9cwPVG"
+consumer_secret <- XXXXXXXXXX
 ## consumer key (en el ejemplo no es una clave real, usar la verdadera)
-access_token <- "279639492-wijUHyQz68AXgFILwcKXXVfsMvSJCbY7cCB9w7I8"
+access_token <- XXXXXXXXXX
 ## consumer secret (en el ejemplo no es un clave real, usar la verdadera)
-access_secret <- "P3LMjZ60E4BWsEWE49AJnT4WTdJpFNGwsmyJWL0obdEb9"
+access_secret <- XXXXXXXXXX
 
 
 
@@ -174,20 +174,20 @@ tweets %>%
   arrange(desc(followers_count)) %>% 
   select(screen_name, followers_count, location, text)
 
-# tweets m�s populares
+# tweets más populares
 ggplot(filter(tweets, !is_retweet))+
   geom_histogram(aes(x = retweet_count))
 
-#  Identifiquemos el tweet original m�s que sum� m�s retweets:
+#  Identifiquemos el tweet original más que sumó más retweets:
 tweets %>% 
   filter(!is_retweet) %>% 
   filter(retweet_count == max(retweet_count)) %>% 
   select(screen_name, retweet_count, followers_count, location, text)
 
-# hora del d�a que se publican los tweets
+# hora del día que se publican los tweets
 ts_plot(tweets, "minutes")
 
-# Probamos extraer el top 10 de lugares m�s frecuentes, eliminando los tweets de
+# Probamos extraer el top 10 de lugares más frecuentes, eliminando los tweets de
 # usuarios sin datos en su atributo "location".
 tweets %>%
   filter(location != "", !is.na(location)) %>% 
@@ -197,19 +197,19 @@ tweets %>%
   geom_col(aes(x = reorder(location, n), y = n)) + 
   coord_flip() +
   labs(title = "Procedencia de los usuarios",
-       x = "ubicaci�n",
+       x = "ubicación",
        y = "cantidad")
 # 
 # "escuchar" el stream de Twitter por un minuto (60 segundos)
 captura_streaming <- stream_tweets(q = "Trump OR Biden OR Elections2020", timeout = 120)
 
-# Capturando tweets por per�odos prolongados
+# Capturando tweets por períodos prolongados
 terminos_de_busqueda <- "Trump OR Biden OR Elections2020"
 
 #una semana: 60 segundos * 60 * 24 * 7
 tiempo <- 60 * 60 * 24 * 7
 
-# El archivo donde guardar los resultados en disco (tendr� formato json, as� que lo usamos en el nombre de archivo)
+# El archivo donde guardar los resultados en disco (tendrá formato json, así que lo usamos en el nombre de archivo)
 archivo <- "busqueda_tweets_DT_VP.json"
 
 
@@ -255,7 +255,7 @@ tweets <- parse_stream("busqueda_tweets_DT_VP.json")
 # # En los tweets hay dos datos geograficos siempre: 
 # #   * `lat`/`lon` (para los tweets geolocalizados) 
 # #   * `place_lat` and `place_lon` (para los tweets con informacion de lugar). 
-# # Trabajaremos con cualquiera de los dos, con el que esté disponible.
+# # Trabajaremos con cualquiera de los dos, con el que estÃ© disponible.
 # tweets$lat <- ifelse(is.na(tweets$lat), tweets$place_lat, tweets$lat)
 # tweets$lon <- ifelse(is.na(tweets$lon), tweets$place_lon, tweets$lon)
 #  FIN METODO 1 ####################################################################################
@@ -295,7 +295,7 @@ is.weighted(g)
 # 3. Parametrizacion----
 # 3.1. Parametros de los nodos (vertices)----
 # Existe una linea (al menos un retweet) entre vmm7773 y cnt1910
-# muestra si hay relaci�n entre "A" y "B"
+# muestra si hay relación entre "A" y "B"
 g["vmm7773", "cnt1910"]
 g["ciudadanatw", "vmm7773"]
 g["vmm7773", "ciudadanatw"]
@@ -629,7 +629,7 @@ saveWidget(gjs_covid19, file="covid19_24sep2020.html")
 saveWidget(gjs_covid19_2, file="covid19_24sep2020_2.html")
 
 # 5. Nodos influyentes----
-# ¿Nos quedamos con los top10 segun estos 3 criterios?
+# Â¿Nos quedamos con los top10 segun estos 3 criterios?
 influencers_degree <- vertices.df %>%
   dplyr::arrange(desc(dtot)) %>%
   dplyr::mutate(topDegree = seq(1,nrow(vertices.df),1))
@@ -650,7 +650,7 @@ influencers_btw[1:10,]
 # de los medios sociales.
 # En general, podemos asumir que se trata de cuentas que generan contenido de forma 
 # muy automatizada.
-# ¿Podemos detectarlos?
+# Â¿Podemos detectarlos?
 # Vamos a centrarnos en cuentas que no tuitean nada original y que retwitean mucho
 vertices.df %>% 
   dplyr::filter(tweets == 0) %>% 
