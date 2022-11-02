@@ -1,0 +1,689 @@
+---
+title: '**House sales in King County - TEAM 4**'
+author: 
+- Bernal, Pablo 
+- Bernar, Jacobo 
+- Bernardi, Andrea 
+- Catalan, Iñigo 
+- Del Olmo, Antonio 
+- Gaido, Federico
+- Goncer, Javier
+- Lago, Pablo
+- Zaldivar, Miguel 
+date: "October 2022"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+```{r setup, include=FALSE, results='hide'}
+# knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(echo=TRUE, tidy=FALSE, message=FALSE, comment = "|")
+# Limpiamos el workspace
+rm(list = ls())
+
+# Cambiar el directorio de trabajo
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+getwd()
+```
+
+```{r, results='hide', warning=FALSE, include=FALSE}
+# packages & libraries
+
+library('ggmap') #mapa
+library('tidyverse') #para lectura CSV
+library('ggplot2')# para scatterplot
+library('hrbrthemes') # para scatterplot
+library('car')
+library('gridExtra')
+library('corrplot') #para graficas
+library ('tidyquant')
+library('caTools') #sample.split
+library('randomForest')
+library('infer') #rep_sample
+library('ggpubr') #ggplot matrix
+library('caret')
+
+
+# Importing data #
+data<-read_csv('king.csv')
+```
+
+# EXECUTIVE SUMMARY
+
+Throughout the present report, we have explored the provided dataset of house sale prices in King County, with the goal of providing a reasonably accurate regression model able to predict the price, provided the rest of variables that are available.
+
+We divided our analysis in two parts, one that we called "Data Exploration", where we analyzed the data by itself, looking at the distribution of the prices as well as at the relationships between all the variables. With this, we concluded, as one of the main insights, that for most of our dataset, the prices of the houses are located below one million dollars, with a number of outliers for higher prices. We also observed that some variables like the number of bathrooms are heavily correlated with the price, whereas others that could seem apparently very important, like the age of the house or its condition, have little effect on it.
+
+Using some of these insights as guidelines, we provided a number of models with different levels of complexity and accuracy, ranging from simple linear interpolations on one variable, to a random forest that fed from all the features, including also a certain pre-processing of the inputs. We observed how, in general, making the model more complex, involving a higher number of parameters and depending on more features improved the accuracy. But we also concluded that relying on lowly correlated variables does not add much value for the price to pay in complexity and computation time, showing how removing, or simplifying some of those, could hardly have an impact on accuracy.
+
+Then, we showed how each of the models behaved when exposed to new values, through the split of our set between training and testing. Increasing the complexity beyond necessary can make the accuracy for new or known values diverge, causing over-fitting, which eventually could yield a model unsuitable to make new predictions.
+
+Finally, we extracted some final conclusions regarding the business applications of the models presented here, showing how they could be helpful in the appraisal of new houses. However, the limitations of the model in terms of accuracy, and also price range, should be well understood, as they make the models unreliable for some applications.
+
+#  1. INTRODUCTION
+
+The objective of this assignment was to create a model for house sale prices in King County, as a function of their characteristics. King County, which includes Seattle, is the most populous county in Washington (population 2,337,361 in the 2022 census), and the $13^{th}$-most populous in the United States. The data set includes homes sold between May 2014 and May 2015. This is how the houses are disposed along the map in terms of sales density **(Exhibit 1)**.
+
+As a first step, before building up a model, we conducted a data exploration study in order to understand better the data set. First, we look into the data type of each of the features and at the consistency of the data (missing values, duplicates...). Then, we looked into the correlation between the variables, looking particularly into the relationship with the price (our dependent variable). With this we extracted valuable information about which variables seem to be determinant and which ones negligible when it comes to price. We also could infer which variables seem to move together or in opposite directions, and to which extent. We also looked into the distribution of data for each of the features, being able to determine the amount of outliers in each case. Finally  we randomly split the sample between training and testing, in order to validate the accuracy of the model without being mislead by over-fitting.
+
+Once the data set was well understood, we built different linear regression models, first choosing a single variable: a lowly correlated variable first and a highly correlated one after, so that we could assess the suitability of each one. Later we made the model more complex by including all of the variables, to simplify back after that by removing some lowly correlated features. Finally, we also tested a random forest algorithm, showing how it seems to be more suitable for the current problem, given the number of features and different data types.
+
+We decided to perform all of this analysis using the software R, because it offered more flexibility to develop and tune different kinds of models. The present report and figures have been developed with *RMarkdown*. The coding associated for each of the sections has been included in the exhibits. 
+
+```{r, warning=FALSE, include=FALSE}
+# plot map - EXHIBIT 1 -
+
+
+initial_plot <- qmplot(data = data, geom = "blank",
+       x = long, y = lat, 
+       maptype = "toner-lite", 
+       darken = 0.5, 
+       zoom = 10) + 
+  stat_density_2d(
+    aes(fill = stat(level)),
+    geom = "polygon", 
+    alpha = .2, color = NA) + 
+  scale_fill_gradient2(
+    "House\nConcentration", 
+    low = "white", 
+    mid = "yellow", 
+    high = "red") + 
+  theme(legend.position = "bottom") +
+  labs(title = "House sales density distribution by coordinates",
+       subtitle = "in King County, WA")
+ggsave("initial_plot.jpg")
+```
+
+#  2. DATA EXPLORATION
+
+## 2.1. Duplicated [^1] and missing [^2] values
+
+[^1]: Q1. How many duplicates do we have in this data set?
+
+[^2]: Q2. What is the proportion of houses with missing data?
+
+```{r, warning=FALSE, include=FALSE}
+# Q1. How many duplicates do we have in this data set?
+unique_value <-length(unique(data$id))
+total_data <- length(data$id)
+
+df = data[!duplicated(data$id),]
+```
+
+If we look at the whole set of features together, there are apparently no duplicated houses as a whole, since we did not find any identical rows in the dataset. However, when looking into the ID feature alone, which should be unique, we did find `r length(data$id)- length(unique(data$id))` repeated instances, so we can conclude that this is the number of duplicated items. Out of the `r length(data$id)` rows, `r length(unique(data$id))` are unique. It is a possibility that the same house could have been sold more than once with different prices in the given year, however since the size of the sample is large compared to the amount of duplicates, we decided to drop the duplicated ID rows.
+
+In terms of missing data, while there are no empty values in any of the samples (meaning there is no missing data in principle), some of the rows contain "0" in some features where that value does not seem reasonable. For example, for some houses the reported area of the basement is zero, whereas likely there is no basement in that house, or there is just no information about it.  One might infer that those zeroes are just a replacement for missing data. Since it is not possible to discern which "zeroes" have meaning and which do not, we cannot at this time give a clear number on the amount of missing data.
+
+```{r, warning=FALSE, include=FALSE}
+# Q2. What is the proportion of houses with missing data?
+na_data <-sum(is.na(df))
+print("NaN is: ")
+na_data
+
+```
+
+## 2.2. Price distribution[^4]
+
+The time evolution of the sale prices[^3] is shown in **Exhibit 2**, with the distribution in the form of a histogram is shown in **Exhibit 3** (including also a logarithmic scale for easier visual interpretation).
+
+```{r, warning=FALSE, include=FALSE}
+
+price_distribution <- ggplot(data, aes(x=date, y=price)) +
+  geom_point() 
+```
+
+```{r, warning=FALSE, include=FALSE}
+
+#   Q4. How is the distribution of the sale price?
+ggp <- ggplot(data = df, aes(x = price/(1e6), stat(density))) + 
+  geom_histogram(fill = "lightblue", alpha = 0.7, color = "black",  bins = 50) + 
+  geom_density(aes(x = price/(1e6)), color = "firebrick", size = 1) +
+  labs(x = "Price USD$ (in millions)", y = "", title = "Selling price distribution") +
+  scale_x_continuous() +
+  tidyquant::theme_tq() +
+  theme(axis.text.x = element_text(color = "black", size = 11), 
+        text = element_text(color = "black"), 
+        plot.title = element_text(hjust = .5, size = 13))
+```
+Looking into the plot, it seems that there is no clear time trend for the prices, and that other parameters determine the price. This makes sense since the sample is only considering a time span of a year. If we were to include sales over a larger number of years or even decades, we would probably see a more pronounced time effect.
+
+As it is shown, even though the span in prices is large, covering from zero to several millions of dollars, most of the houses are sold at a price that is below one million. The distribution is clearly not a "normal" and resembles more a "gamma" or "alpha" distribution. It is clearly "skewed" towards low prices. Because of this, we might want to consider dropping some of the high-price outliers to improve our accuracy in low prices. We also should not trust the output of models trained with this data if it happens to predict very high prices, since the sample would not be representative.
+
+
+[^3]: Q3. Is there a time trend in the sale price?
+[^4]: Q4. How is the distribution of the sale price?
+
+```{r, warning=FALSE, include=FALSE}
+#  cambio de escala en el eje X para no perder resolucion.
+ggp2 <- ggplot(data = df, aes(x = log(price), stat(density))) + 
+  geom_histogram(fill = "lightblue", alpha = 0.7, color = "black",  bins = 30) +
+  geom_density(aes(x = log(price)), color = "firebrick", size = 1) +
+  labs(x = "Logarithmic Selling Price", y = "", title = "Selling price distribution") +
+  tidyquant::theme_tq() +
+  theme(axis.text.x = element_text(color = "black", size = 11), 
+        text = element_text(color = "black"), 
+        plot.title = element_text(hjust = .5, size = 13),
+        plot.subtitle = element_text(size = 11.5))
+```
+
+
+##  2.3. Correlations
+
+In order to understand better the relationships between the different features in the sample, we computed their correlation matrix, which is exposed in **Exhibit 4**.
+
+Note that, since the *id* is just the index of each element, it has been omitted. Similarly, since as shown before there is no connection between the *date* and the *price*, the date of the sale has also been excluded from this analysis, and also from the regression models presented hereafter.
+
+From the correlation matrix we can extract several important conclusions. The *price*, which is the most important variable in our study, is highly correlated with the amount of bathrooms and the size (*sqft_above*). These two variables are also highly correlated between each other, which makes sense (the larger the house, the more bathrooms needed). Other quite determining variables are the amount of *bedrooms*, *floors*, and also the extension of the basement, being all of those also quite correlated with each other. Latitude also seems to be a quite important factor, which makes sense given the distribution of the houses that is shown in **Exhibit 1**. Interestingly, features like the *condition*, the age (*yr_built*) or the longitude (*lon*) hardly have any effect on the price.
+
+In practice, the conclusions extracted from the above analysis are:
+
+* We might want to drop some lowly correlated variables from our model, and those could be, in order: *long*, *condition*, *zipcode*, *yr_built*, *sqft_lot*.
+* If we were to choose one variable to determine the price alone, this probably should be the bathrooms (*bathroom*).
+* There is not too much duplicated information, since there are no highly cross-correlated variables, so there is no need to drop features for this reason.
+
+
+#  3. REGRESSION MODELS
+
+## 3.1. Train / Test split
+
+In order to be able to validate the accuracy of our models, making sure that we have not incurred in over-fitting, we decided to perform a random split of the sample, using 80% of the set to train the subsequent models and leaving aside the remaining 20% for testing:
+
+
+```{r, warning=FALSE}
+sample=sample.split(df$price,SplitRatio=0.8)    #split 80%-20%
+train=subset(df,sample==T)
+test=subset(df,sample==F)
+```
+
+
+## 3.2. Univariable linear regression
+
+The simplest possible regression model that we can train is a uni-variable linear regression. This means assuming that one of the "known" variables alone determines the price, and that the relationship between the two is close to linear. We have already shown that this is not the case. However, we can use this model to test the differences between relying on a highly correlated variable or on a lowly correlated one.
+
+```{r, warning=FALSE, include=FALSE}
+# equation
+mymodel_simple_1 <- lm(price ~ yr_built, data = train)
+summary(mymodel_simple_1)
+
+# prediction
+train_simple_1 <- predict(mymodel_simple_1, newdata = train)
+```
+
+
+If we used as independent variable the year that the house was built, the resulting equation would be the following:
+
+$$
+P_0= `r mymodel_simple_1$coefficient[1]` + `r mymodel_simple_1$coefficient[2]`\ x\ yr\_built
+$$
+The resulting prediction, compared also with the real prices, is presented in **Exhibit 6** and the accuracy metrics of the regression are shown in **Exhibit 5**.
+
+```{r, warning=FALSE, include=FALSE}
+
+ggp_simple_1 <- ggplot(train, aes(x=price, y=train_simple_1)) +
+  geom_point() +
+  labs(x = "Actual Price", y = "Predicted Price")
+ggsave("ggp_simple_1.jpg")
+
+error_ggp_simple_1 <- ggplot(train, aes(x=price, y=abs(train_simple_1-price))) +
+  geom_point() +
+  labs(x = "Actual Price", y = "Error (abs)")
+ggsave("error_ggp_simple_1.jpg")
+
+```
+
+The equation shows how the later the house is built, the higher is the price that we should expect for it. This makes sense, and is also in line with the positive correlation of price and year built that we showed in the previous section. For each year of age (minus one if looking at the year of construction), we should expect a drop of USD$ `r format(mymodel_simple_1$coefficient[2], scientific=F)` in the price. Note that this is not a lot, meaning that the model will predict very similar prices, considering that all of the houses are built in the same century. We can also see that there seems to be a certain age at which the price drops to zero or even below, which has no meaning in reality.
+
+In terms of accuracy, the $R^2$ is `r round(summary(mymodel_simple_1)$r.squared,4)`, and the p-value is almost 0. This accuracy is extremely poor, proving that using a lowly correlated variable as the single one for a linear prediction is not a good idea.
+
+Instead, if we were to use a highly correlated variable such as the number of bathrooms, we would obtain the following equation:
+
+```{r, warning=FALSE, include=FALSE}
+# equation
+mymodel_simple_2 <- lm(price ~ bathrooms, data = train)
+summary(mymodel_simple_2)
+
+# prediction
+train_simple_2 <- predict(mymodel_simple_2, newdata = train)
+```
+
+
+$$
+P_1= `r mymodel_simple_2$coefficient[1]` + `r mymodel_simple_2$coefficient[2]`\ x\ bathrooms
+$$
+
+The resulting prediction is shown in **Exhibit 8** and the corresponding metrics in **Exhibit 7**.
+
+This new equation shows how each new bathroom "adds" a value of USD$ `r format(mymodel_simple_2$coefficient[2], scientific=F)` to the house. This is a much higher value that shows how the number of bathrooms is indeed important in determining the price. We should expect a much more spread distribution of prices as an output of this model. Note that the number of bathrooms is a discrete variable, which means that the predicted prices will also be discrete.
+
+In terms of accuracy, the $R^2$ is `r round(summary(mymodel_simple_2)$r.squared,4)` and p-value is almost 0 again. Note that even though we are just simply using the number of bathrooms to make a prediction, we achieve a much more reasonable accuracy in this case. That said, that $R^2$ figure is still very low, so this model is very unreliable.
+
+```{r, warning=TRUE, include=FALSE}
+ggp_simple_2 <- ggplot(train, aes(x=price, y=train_simple_2)) +
+  geom_point() +
+  labs(x = "Actual Price", y = "Predicted Price")
+
+error_ggp_simple_2 <- ggplot(train, aes(x=price, y=abs(train_simple_2-price))) +
+  geom_point() +
+  labs(x = "Actual Price", y = "Error (abs)")
+
+```
+
+## 3.3. Multi-variable linear regression[^5]
+
+[^5]: Q5. Develop a linear regression equation for predicting the sale
+    price in terms of the available features. Evaluate this predictive
+    model.
+
+Since a single variable is clearly not enough to determine the price of a house, the next step is to include multiple ones. As a first step, we developed a linear model that took into account all of the variables at the same time, with the exception of *id*.
+
+```{r, warning=FALSE, include=FALSE}
+#equation
+start_time <- Sys.time()
+mymodel_multiple <- lm(price ~ date +zipcode +lat +long +bedrooms +bathrooms
+                       +sqft_above +sqft_basement + sqft_lot +floors +waterfront
+                       +condition +yr_built +yr_renovated, data = train)
+summary(mymodel_multiple)
+
+#prediction
+train_multiple <-predict(mymodel_multiple, newdata = train)
+end_time <- Sys.time()
+before= end_time - start_time
+```
+
+
+The resulting equation, now clearly more complex, is shown below:
+
+$$
+\begin{aligned}
+P_2= `r mymodel_multiple$coefficient[1]` + \\
+`r mymodel_multiple$coefficient[2]`\ x\ date + \\
+`r mymodel_multiple$coefficient[3]`\ x\ zipcode + \\
+`r mymodel_multiple$coefficient[4]`\ x\ lat + \\
+`r mymodel_multiple$coefficient[5]`\ x\ long + \\
+`r mymodel_multiple$coefficient[6]`\ x\ bedrooms + \\
+`r mymodel_multiple$coefficient[7]`\ x\ bathrooms + \\
+`r mymodel_multiple$coefficient[8]`\ x\ sqft_above + \\
+`r mymodel_multiple$coefficient[9]`\ x\ sqft_basement + \\
+`r mymodel_multiple$coefficient[10]`\ x\ sqft_lot + \\
+`r mymodel_multiple$coefficient[11]`\ x\ floors + \\
+`r mymodel_multiple$coefficient[12]`\ x\ waterfront + \\
+`r mymodel_multiple$coefficient[13]`\ x\ condition + \\
+`r mymodel_multiple$coefficient[14]`\ x\ yr_built + \\
+`r mymodel_multiple$coefficient[15]`\ x\ yr_renovated
+\end{aligned}
+$$
+
+
+The accuracy metrics are presented in **Exhibit 9** and the corresponding predictions, plot in comparison with the actual prices, in **Exhibit 10**.
+
+Some comments about the obtained results:
+
+* Unlike before, *yr_built* contributes negatively to the price. This is quite unreasonable since we are saying that the older the house, the most expensive. A similar effect is observed in the number of *bedrooms*. This could be explained by the cross-correlation between those variables and others in the sample, that are perhaps over-weighted by the model.
+* Features like  *condition*, *floors*, *bathrooms*, *waterfront* and *yr_renovated* contribute positively to the price, which make sense.
+* The biggest coefficients are the ones for *lat*, *long* and *waterfront*. At first glance this doesn't seem very reasonable since some of those are not very highly correlated with the price, as we saw before. However, it is important to keep in mind that these variables have different dimensions, which likely explains part of it. It would be a good practice to remove the dimensions first, before training the model, for better performance and straightforward conclusions.
+
+```{r, warning=FALSE, include=FALSE}
+
+ggp_multiple <- ggplot(train, aes(x=price, y=train_multiple)) +
+  geom_point() + 
+  labs(x = "Actual Price", y = "Predicted Price")
+
+error_ggp_multiple <- ggplot(train, aes(x=price, y=abs(train_multiple-price))) +
+  geom_point() + 
+  labs(x = "Actual Price", y = "Error (abs)")
+
+```
+
+
+Despite all these nuances, it is clear that the accuracy of the model has increased dramatically ($R^2$ is `r round(summary(mymodel_multiple)$r.squared,4)`), which makes sense since we are now leveraging more of the information that we have available. However, with it we have also increased the complexity of the model, in the case of some variables probably without achieving much of an improvement in terms of accuracy.
+
+This is why, as a next step, we decided to remove some of the lowly correlated variables from the model, reducing unnecessary complexity and potentially even improving accuracy because of having removed noise. We removed the variables *date*, *zipcode*, *long*, *sqft_lot*, *condition* and *yr_built* and repeated the analysis, leading to the following new equation:
+
+```{r, warning=FALSE, include=FALSE}
+#equation
+start_time <- Sys.time()
+mymodel_some_var <- lm(price ~ bedrooms +bathrooms
+                       +sqft_above +sqft_basement +floors +waterfront
+                       +condition +yr_renovated, data = train)
+summary(mymodel_some_var)
+
+#prediction
+train_some_var <-predict(mymodel_some_var, newdata = train)
+end_time <- Sys.time()
+after =end_time- start_time
+
+```
+
+
+$$
+\begin{aligned}
+P_3= `r mymodel_some_var$coefficient[1]` + \\
+`r mymodel_some_var$coefficient[2]`\ x\ bedrooms + \\
+`r mymodel_some_var$coefficient[3]`\ x\ bathrooms + \\
+`r mymodel_some_var$coefficient[4]`\ x\ sqft_above + \\
+`r mymodel_some_var$coefficient[5]`\ x\ sqft_basement + \\
+`r mymodel_some_var$coefficient[6]`\ x\ floors + \\
+`r mymodel_some_var$coefficient[7]`\ x\ waterfront + \\
+`r mymodel_some_var$coefficient[8]`\ x\ condition + \\
+`r mymodel_some_var$coefficient[9]`\ x\ yr_built + \\
+`r mymodel_some_var$coefficient[10]`\ x\ yr_renovated
+\end{aligned}
+$$
+
+The metrics and details of the model are available in **Exhibit 11**, and the corresponding predictions, plot[^6] in comparison with the actual prices, in **Exhibit 12**, with the error in shown as well.
+
+[^6]: Q6. Plot the actual price versus the price predicted by your model. What do you see?
+
+Note that there are still some inconsistencies regarding the signs, such as the in coefficient multiplying the number of *bedrooms*. This is likely again due to the high cross-correlation of that variable with others like the number of *bathrooms* or the area of the house. The order of magnitude of the new coefficients is higher, meaning that we have decreased the granularity of the model. This explains the moderate decrease in $R^2$, which is now `r round(summary(mymodel_some_var)$r.squared,4)`.
+
+However, one key advantage of a model with less variables is its simplicity, which in practice is also translated in lower computation times. In our case, this would be the comparison between running times:
+
+```{r, warning=FALSE}
+before
+after
+```
+
+
+Note that both numbers are really low because a linear interpolation is still very simple. However, there is still a difference of around 10%. In a situation with a more sophisticated model, higher number of variables and also a larger dataset, it would definitely be advisable to let go of that slight improvement in accuracy in favor of simplicity.
+
+
+```{r, warning=FALSE, include=FALSE}
+# Q6. Plot the actual price versus the price predicted by your model. What do you see?
+
+ggp_some_var <- ggplot(train, aes(x=price, y=train_some_var)) +
+  geom_point() + 
+  labs(x = "Actual Price", y = "Predicted Price")
+
+ggp_error_some_var <- ggplot(train, aes(x=price, y=abs(train_some_var-price))) +
+  geom_point() + 
+  labs(x = "Actual Price", y = "Error (abs)")
+
+```
+
+##  3.4. Random Forest (extra)
+
+
+```{r, warning=FALSE, include=FALSE}
+# Random Forest
+
+# Eliminate low correlated variables
+train_2 = dplyr::select(train, -id, -date, -zipcode, -long, -sqft_lot, -condition)
+test_2 = dplyr::select(test, -id, -date, -zipcode, -long, -sqft_lot, -condition)
+
+# Pre-processing of variables
+# Group year of built and delete
+train_2$yearb <- cut(train_2$yr_built, c(1900,1950,2000,2020))
+train_2$yearb<-factor(train_2$yearb,levels = c("(1.9e+03,1.95e+03]","(1.95e+03,2e+03]",
+                                           "(2e+03,2.02e+03]"),
+                      labels = c("1900-1950","1950-2000","2000-2020"))
+test_2$yearb <- cut(test_2$yr_built, c(1900,1950,2000,2020))
+test_2$yearb<-factor(test_2$yearb,levels = c("(1.9e+03,1.95e+03]","(1.95e+03,2e+03]",
+                                           "(2e+03,2.02e+03]"),
+                      labels = c("1900-1950","1950-2000","2000-2020"))
+train_2 = dplyr::select(train_2, -yr_built) 
+test_2 = dplyr::select(test_2,-yr_built) 
+
+# Basement as boolean
+train_2$basement<-ifelse(train_2$sqft_basement>0,1,0)
+test_2$basement<-ifelse(test_2$sqft_basement>0,1,0)
+train_2<-dplyr::select(train_2, -sqft_basement)
+test_2<-dplyr::select(test_2, -sqft_basement)
+
+# Train random forest
+train_2=rep_sample_n(train,size =17290,reps = 2,replace = TRUE)  # 80% data
+model_rf = randomForest(train_2$price~.,train_2[,-1], ntree=80)
+
+# Perform predictions
+rf_train <- predict(model_rf, newdata=(dplyr::select(train_2, -price)))
+
+test_2=rep_sample_n(test,size =4323,reps = 2,replace = TRUE)  # 20% data
+rf_test <- predict(model_rf, newdata=(dplyr::select(test_2, -price)))
+
+# Errors
+error_rf_train = abs(rf_train - train_2$price)
+error_rf_test = abs(rf_test - test_2$price)
+
+# R2 (train)
+i<-round(1-(sum(error_rf_train^2)/sum((train$price - mean(train$price))^2)),4)
+```
+
+```{r, warning=FALSE, include=FALSE}
+print("R2 (train):")
+i
+```
+
+
+As an additional exercise, in the search for higher accuracy, we tested the performance on this dataset of a more sophisticated model, such as a Random Forest. To further improve the results, we made a couple of pre-processing changes to the variables in order to simplify them[^7] while retaining some of their information:
+
+* We changed the variable *yr_built* by a new variable, *yearb*, that splits the year of construction in 4 groups: 1900-1950, 1950-2000, 2000-2020. 
+* We changed the *sqft_basement* by a boolean, just showing whether there is a basement or not.
+* Just like before, we removed some lowly correlated variables: *id*, *date*, *zipcode*, *long*, *sqft_lot*, *condition*.
+
+
+The new resulting prediction[^8] and errors can be found in **Exhibit 13**. As shown in **Exhibit 14**, with these few changes we improved the accuracy substantially ($R^2$ is now `r i`). Note that this accuracy is quite higher than the one achieved with the linear model. This makes sense given the higher complexity of the Random Forest, as it relies on a higher number of parameters. Also, the different characteristics of the variables (different data types, discrete vs continuous, etc.) are better interpreted by Decision Trees than they can be by linear models, which assumes that all variables are continuous.
+
+[^7]: Q7. Given what you see in your answer to Q6, can you modify one/some of the explanatory variables so that adjusted $R^2$ improves?
+
+[^8]: Q8. What is the highest adjusted $R^2$ you can obtain without removing outliers AND after successful cross validation? (successful means, let's say, that adjusted $R^2$ of test and train cannot be further than two percentage points).
+
+```{r, warning=FALSE, include=FALSE}
+# Q6. Plot the actual price versus the price predicted by your model. What do you see?
+
+ggp_rf <- ggplot(train_2, aes(x=price, y=rf_train)) +
+  geom_point() + 
+  labs(x = "Actual Price", y = "Predicted Price")
+
+ggp_error_rf <- ggplot(train_2, aes(x=price, y=error_rf_train)) +
+  geom_point() + 
+  labs(x = "Actual Price", y = "Error (abs)")
+
+```
+
+#  4. VALIDATION USING TEST DATA
+
+So far, we have been presenting results based on the "training" subset of our sample, which is the one we have been using to inform the models. However, we still do not know how well the various models behave when exposed to new data, which will be in practice the way the models will be used. In order to provide a number of this, we tested the performance on the 20% of the dataset that we did not use for training the models, obtaining the following $R^2$ results:
+
+```{r, warning=FALSE, include=FALSE}
+test_simple_1 <-predict(mymodel_simple_1, newdata = test)
+test_simple_2 <-predict(mymodel_simple_2, newdata = test)
+test_multiple <-predict(mymodel_multiple, newdata = test)
+test_some_var <-predict(mymodel_some_var, newdata = test)
+
+
+# errors
+error_simple_1 <- test$price - test_simple_1
+error_simple_2 <- test$price - test_simple_2
+error_multiple <- test$price - test_multiple
+error_some_var <- test$price - test_some_var
+
+R2_simple_1 <- round(1-(sum(error_simple_1^2)/sum((test$price - mean(test$price))^2)),4)
+R2_simple_2 <- round(1-(sum(error_simple_2^2)/sum((test$price - mean(test$price))^2)),4)
+R2_multiple <- round(1-(sum(error_multiple^2)/sum((test$price - mean(test$price))^2)),4)
+R2_some_var <- round(1-(sum(error_some_var^2)/sum((test$price - mean(test$price))^2)),4)
+R2_rf <- round(1-(sum(error_rf_test^2)/sum((test$price - mean(test$price))^2)),4)
+
+b<- round(summary(mymodel_simple_1)$r.squared,4)
+d<- round(summary(mymodel_simple_2)$r.squared,4)
+f<-round(summary(mymodel_multiple)$r.squared,4)
+h<-round(summary(mymodel_some_var)$r.squared,4)
+
+R_comparison <- data.frame (
+  Model = c("simple_low_correlation","simple_high_correlation"," multiple_all_variables", "multiple_few_variables", "random_forest"),
+  R2_train = c(b,d,f,h,i),
+  R2_test = c(R2_simple_1,R2_simple_2,R2_multiple,R2_some_var,R2_rf)
+)
+
+```
+
+
+```{r, warning=FALSE}
+R_comparison
+```
+
+The corresponding predicted prices, compared with the actual ones, are presented in **Exhibit 16**.
+
+As shown by the table, all of the models, even the simple linear regression ones, incur in over-fitting. This effect is even more pronounced as the complexity of the models increases, with the most exagerated difference between training and testing results in the case of the Random Forest solution. This is in part because the number of parameters that such algorithms require is probably too high for the amount of rows in our sample. Additionally, not having removed the outliers in the sample, particularly given the heavily skewed price distribution, might have aggravated the problem.
+
+As proposed further steps in order to mitigate the amount of over-fitting, and perhaps even improve the accuracy overall, we would propose:
+
+- Removing outliers, particularly looking into the prices, and for highly price houses.
+- Scaling all the variables, so that the resulting parameters can be of the same order.
+- Reducing the number of features through a Principal Component Analysis (PCA) in order to remove unnecessary complexity while retaining the highest amount of data possible.
+
+# 5. CONCLUSIONS
+
+With this report, we have explored multiple ways to leverage the provided dataset on King County house sale prices, in order to provide a price prediction for new houses that could be set for sale. We have first analyzed the results in order to explore the relationships between the variables and their contribution to the price, reaching conclusions that we could later exploit when creating the model. As an example, we could observe how the sample was clearly skewed towards low prices, and therefore not suitable for predicting high prices, which we then used to remove highly priced outliers from the sample.
+
+We have also analyzed different kinds of models with increasing complexity, showing how, in principle, adding complexity to the model and leveraging more of the information from the data leads to higher accuracy. However, we have also shown that, for models relying on a number of parameters that is too high, we have the risk of amplifying the noise and errors in the database, as well as the risk of incurring in over-fitting, which would mean that the model is not as useful for predicting items that we have not seen before. This is the reason why, as we have noted, in some cases it is preferable to let go of some of the accuracy in favor of simplicity.
+
+Finally, it is always important to keep an eye on the objective that we are trying to accomplish when creating a model. In this case, for example, the model could be used to provide an automated first guess in the appraisal of a house, both for a seller or for a buyer. That said, the accuracies that we have reached, coupled with some other issues such as the unsuitability of the models for highly valued houses, mean that we probably should not rely completely on a model like this for pricing a house. We should probably still observe case by case that the prediction makes sense, and introduced manual adjustments if needed.
+
+\newpage
+# Exhibit 1
+## House sales density distribution by coordinates subtitle in King County (WA)
+
+```{r, warning=FALSE}
+initial_plot
+
+```
+
+\newpage
+# Exhibit 2
+## Price as a function of sale date
+
+```{r, warning=FALSE}
+price_distribution 
+```
+
+\newpage
+# Exhibit 3
+## Selling price distribution
+```{r, warning=FALSE}
+grid.arrange(ggp, ggp2, ncol = 2)
+
+```
+
+\newpage
+# Exhibit 4
+## Correlation matrix
+```{r, warning=FALSE}
+corrplot(df %>% 
+           select(-c(id, date)) %>% 
+           cor(), 
+           # method = "number", 
+           col = colorRampPalette(c("white", "deepskyblue", "blue4"))(100),
+           addCoef.col = TRUE,
+           method = "shade",
+           type = "lower", 
+           diag = F,
+           number.cex = 0.75) 
+```
+
+\newpage
+# Exhibit 5
+## Predictive model in scenario 1: year built vs. price linear regression
+```{r, warning=FALSE}
+# equation
+mymodel_simple_1 <- lm(price ~ yr_built, data = train)
+summary(mymodel_simple_1)
+
+# prediction
+train_simple_1 <- predict(mymodel_simple_1, newdata = train)
+```
+
+\newpage
+# Exhibit 6
+## Scenario 1: predicted price vs. actual price
+```{r, warning=FALSE}
+ggp_simple_1
+error_ggp_simple_1
+```
+
+\newpage
+# Exhibit 7
+## Predictive model in scenario 2: bathrooms vs. price linear regression
+```{r, warning=FALSE}
+# equation
+mymodel_simple_2 <- lm(price ~ bathrooms, data = train)
+summary(mymodel_simple_2)
+
+# prediction
+train_simple_2 <- predict(mymodel_simple_2, newdata = train)
+```
+
+\newpage
+# Exhibit 8
+## Scenario 2: predicted price vs. actual price
+```{r, warning=TRUE}
+ggp_simple_2
+error_ggp_simple_2
+```
+
+\newpage
+# Exhibit 9
+## Predictive model in scenario 3: linear regression with all variables
+```{r, warning=FALSE}
+#equation
+mymodel_multiple <- lm(price ~ date +zipcode +lat +long +bedrooms +bathrooms
+                       +sqft_above +sqft_basement + sqft_lot +floors +waterfront
+                       +condition +yr_built +yr_renovated, data = train)
+summary(mymodel_multiple)
+
+#prediction
+train_multiple <-predict(mymodel_multiple, newdata = train)
+```
+
+\newpage
+# Exhibit 10
+## Scenario 3: predicted price vs. actual price
+```{r, warning=FALSE}
+ggp_multiple
+error_ggp_multiple
+```
+
+\newpage
+# Exhibit 11
+## Predictive model in scenario 4: linear regression with several highly correlated values
+```{r, warning=FALSE}
+#equation
+
+mymodel_some_var <- lm(price ~ lat +bedrooms +bathrooms
+                       +sqft_above +sqft_basement +floors +waterfront
+                       +yr_renovated, data = train)
+summary(mymodel_some_var)
+
+#prediction
+train_some_var <-predict(mymodel_some_var, newdata = train)
+
+
+```
+
+\newpage
+# Exhibit 12
+##  Scenario 4: predicted price vs. actual price
+```{r, warning=FALSE}
+ggp_some_var
+ggp_error_some_var
+```
+
+
+\newpage
+# Exhibit 13
+##  Random Forest with pre-processing: predicted price vs. actual price
+```{r, warning=FALSE}
+ggp_rf
+ggp_error_rf
+```
+
+
+\newpage
+# Exhibit 14
+## Random Forest with pre-processing: Model description
+```{r, warning=FALSE}
+model_rf
+```
+
+
